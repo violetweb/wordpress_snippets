@@ -1,0 +1,78 @@
+
+	function taxonomy_add_custom_field() {
+		?>
+		<div class="form-field term-image-wrap">
+			<label for="mapbox-cat-image"><?php _e( 'Icon/Image' ); ?></label>
+			<p><a href="#" class="moo_upload_image_button btn btn-secondary"><?php _e('Upload Icon/Image'); ?></a></p>
+			<input type="text" name="mapbox_category_image" id="mapbox-cat-image" value="" size="40" />
+		</div>
+		<?php
+	}
+	add_action('product_categories_add_form_fields', 'add_term_image', 10, 2);
+function add_term_image($taxonomy){
+    ?>
+    <div class="form-field term-group">
+        <label for="">Upload and Image</label>
+        <input type="text" name="txt_upload_image" id="txt_upload_image" value="" style="width: 77%">
+        <input type="button" id="upload_image_btn" class="button" value="Upload an Image" />
+    </div>
+    <?php
+}
+	
+	
+	function taxonomy_edit_custom_field($term) {
+		$image = get_term_meta($term->term_id, 'mapbox_category_image', true);
+		?>
+		<tr class="form-field term-image-wrap">
+			<th scope="row"><label for="mapbox_category_image"><?php _e( 'Image' ); ?></label></th>
+			<td>
+				<p><a href="#" class="moo_upload_image_button btn btn-secondary"><?php _e('Upload Image'); ?></a></p><br/>
+				<input type="text" name="mapbox_category_image" id="mapbox-cat-image" value="<?php echo $image; ?>" size="40" />
+			</td>
+		</tr>
+		<?php
+	}
+	
+	
+	function save_taxonomy_custom_meta_field( $term_id ) {
+		if ( isset( $_POST['mapbox_category_image'] ) ) {
+			update_term_meta($term_id, 'mapbox_category_image', $_POST['mapbox_category_image']);
+		}
+	}  
+  
+  jQuery(document).ready(function($) {
+   
+    $('body').on('click', '.moo_upload_image_button', function(e){   
+        e.preventDefault();
+
+        const button = $(this);
+        const imageId = $("#mapbox-cat-image").val();
+  
+       const moo_uploader = wp.media({
+            title: 'Custom image',
+            button: {
+                text: 'Use this image'
+            },
+            multiple: false
+        }).on('select', function() {
+            var attachment = moo_uploader.state().get('selection').first().toJSON();
+            $("#mapbox-cat-image").val(attachment.url);
+        })
+        .open();
+
+          // already selected images
+     moo_uploader.on( 'open', function() {
+
+        if( imageId ) {
+          const selection = customUploader.state().get( 'selection' )
+          attachment = wp.media.attachment( imageId );
+          attachment.fetch();
+          selection.add( attachment ? [attachment] : [] );
+        }
+        
+      });
+    });
+
+   
+
+});
