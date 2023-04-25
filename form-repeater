@@ -1,0 +1,104 @@
+<?php
+global $post;
+wp_nonce_field(basename(__FILE__), "moomore-nonce");
+//$store_groups = get_post_meta($post->ID, 'lakedesign_store_groups', true);
+?>
+<style scope="inline">
+</style>
+<div class="lakedesign_store_info">
+ <p>
+  <label for="lakedesign_store_phone">Phone</label>
+    <br />
+    <input class="widefat" type="text" name="lakedesign_store_phone" id="lakedesign_store_phone" value="<?php echo esc_attr( get_post_meta( get_the_ID(), 'lakedesign_store_phone', true)); ?>">
+  </p>
+  <p>
+    <label for="lakedesign_store_address">Address</label><br />
+    <input class="widefat" type="text" name="lakedesign_store_address" id="lakedesign_store_address" value="<?php echo esc_attr( get_post_meta( get_the_ID(), 'lakedesign_store_address', true ) ); ?>">
+  </p>
+  <p>
+    <label for="lakedesign_store_google_map">Google Map Url</label><br />
+    <input class="widefat" type="text" name="lakedesign_store_google_map" id="lakedesign_store_google_map" value="<?php echo esc_attr( get_post_meta( get_the_ID(), 'lakedesign_store_google_map', true ) ); ?>">
+  </p>
+<?php $selected = get_post_meta( get_the_ID(), 'lakedesign_store_availability', true ) ; ?>
+  <label for="lakedesign_store_availability">Availability</label><br />
+    <select class="widefat" id="availability" name="lakedesign_store_availability">
+      <option value="seasonal" <?php 
+	  if ($selected == "seasonal") { 
+		echo 'selected';
+	} ?>>Seasonal</option>
+      <option value="all"  <?php 
+	  if ($selected == "all") { 
+		echo 'selected';
+	 } ?>>All Year</option>
+    </select>
+  
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.repeater/1.2.1/jquery.repeater.min.js"></script>
+<script>
+  $( function() {
+    $( ".datepicker" ).datepicker();
+  } );
+  </script>
+<style>
+		#store_repeater table, #store_repeater table input{ width: 100%; }
+		td.inner_tr > tr { display: table; width: 100%; }
+		td.inner_td tr { display: table; width: 100%; }
+</style>
+<div id="store_repeater">
+	<table>
+		<tbody>
+			<tr class="my-repeater">
+				<td data-repeater-list="store-group" class="inner_td">
+					<?php if(!empty($store_groups)) { ?>
+							<?php foreach($store_groups as $group) { 
+								?>
+								<table data-repeater-item>
+									<tr>
+										<td class="inner-outer-repeater">
+											<table>
+												<tr>
+                                                    <td><input class="datepicker" type="text" name="date_range_from" value="<?php echo $group['date_range_from']; ?>" placeholder="Date Range (from)" /></td>	
+                                                    <td><input class="datepicker" type="text" name="date_range_to" value="<?php echo $group['date_range_to']; ?>" placeholder="Date Range (to)" /></td>			
+													<td><input type="text" name="store_hours" value="<?php echo $group['store_hours']; ?>" placeholder="Store Hours for Date Range" /></td>													
+													<td><input data-repeater-delete class="button"  type="button" value="-" /></td>
+												</tr>
+											</table>
+										</td>
+                                    </tr>
+  							</table>
+							<?php } ?>
+						<?php } else { ?>
+							<table data-repeater-item>
+								<tr>
+									<td class="inner-outer-repeater">
+										<table>
+											<tr>
+												<td><input class="datepicker" type="text" name="date_range_from" value="" placeholder="Date Range" /></td>	
+                                                <td><input class="datepicker" type="text" name="date_range_to" value="" placeholder="Date Range" /></td>													
+                                                <td><input type="text" name="store_hours" value="" placeholder="Store Hours for Date Range" /></td>												
+												<td><input data-repeater-delete class="button"  type="button" value="-" /></td>
+											</tr>
+										</table>
+									</td>
+                                </tr>
+							</table>
+						<?php } ?>
+					</td>
+					<td><input data-repeater-create class="button"  type="button" value="+"/></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<script type="text/javascript">
+		jQuery(document).ready(function () {
+			jQuery('.wc-repeater').repeater(
+			{
+				repeaters: [{
+					selector: '.inner-repeater'
+				}]
+			});
+		});
+	</script>
+	
