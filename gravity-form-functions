@@ -1,0 +1,447 @@
+<?php 
+//Add custom post type to support coach/member
+function register_resources_post_type(){
+	$labels = array(
+ 		 'name' => __( 'Resources',  'lake-design-text'),
+		 'singular_name' => __( 'Resource', 'lake-design-text' ),
+		 'add_new' => __( 'New Resource','lake-design-text' ),
+		 'add_new_item' => __( 'Add New Resource', 'lake-design-text'),
+		 'edit_item' => __( 'Edit Resource', 'lake-design-text'),
+		 'new_item' => __( 'New Resource', 'lake-design-text' ),
+		 'view_item' => __( 'View Resources', 'lake-design-text'),
+		 'search_items' => __( 'Search Resources', 'lake-design-text' ),
+		 'not_found' =>  __( 'No Resources Found', 'lake-design-text' ),
+		 'not_found_in_trash' => __( 'No s found in Trash', 'lake-design-text' )
+		);
+	$args = array(
+		 'labels' => $labels,
+		 'has_archive' => true,
+		 'public' => true,
+		 'hierarchical' => false,
+		 'supports' => array(
+		  'title',
+		  'editor',
+		  'excerpt',
+		  'custom-fields',
+		  'thumbnail',
+		  'page-attributes'
+		 ),
+		'rewrite'   => array( 'slug' => 'resource' ),
+		 'show_in_rest' => true
+		);
+	register_post_type( 'resources', $args );
+}
+add_action( 'init', 'register_resources_post_type' );
+
+
+function add_custom_resources_taxonomies() {
+  //data, educators, mentors
+  register_taxonomy('resource_category', 'resources', array(
+   
+    'hierarchical' => true,
+   'show_in_rest' => true,
+    'labels' => array(
+      'name' => _x( 'Resources Category', 'lake-design-text' ),
+      'singular_name' => _x( 'Resource Category', 'lake-design-text' ),
+      'search_items' =>  __( 'Search Resource Category' ),
+      'all_items' => __( 'All Resource Category' ),
+      'parent_item' => __( 'Parent Resource Category' ),
+      'parent_item_colon' => __( 'Parent Resource Category:' ),
+      'edit_item' => __( 'Edit Resource Category' ),
+      'update_item' => __( 'Update Resource Category' ),
+      'add_new_item' => __( 'Add New resource Category' ),
+      'new_item_name' => __( 'New Data Resource Category' ),
+      'menu_name' => __( 'Resource Categories' ),
+    ),
+    // Control the slugs used for this taxonomy
+    'rewrite' => array(
+      'slug' => 'resource-category', 
+      'with_front' => false, 
+      'hierarchical' => true 
+    ),
+  ));
+		
+}
+add_action( 'init', 'add_custom_resources_taxonomies', 0 );
+
+//Add coach/participant roles to users.
+
+add_action('after_setup_theme','add_newrole_function');
+function add_newrole_function(){
+    $roles_set = get_option('course_roles_are_set');
+    if(!$roles_set){
+		add_role('coach', 'Coach', array(
+		'read' => true,
+		'create_posts' => false,
+		'create_courses' => false,
+		'create_lessons' => false,
+		'edit_courses' => false,
+		'edit_lessons' => false,
+		'publish_courses' => false,
+		'publish_lessons' => false,
+		'edit_posts' => false,
+		'edit_others_posts' => false,
+		'publish_posts' => false,
+		'manage_categories' => false,
+		));
+		add_role('participant', 'Participant', array(
+		'read' => true,
+		'create_posts' => false,
+		'edit_posts' => false,
+		'edit_others_posts' => false,
+		'publish_posts' => false,
+		'manage_categories' => false,
+		'create_courses' => false,
+		'create_lessons' => false,
+		'edit_courses' => false,
+		'edit_lessons' => false,
+		'publish_courses' => false,
+		'publish_lessons' => false,
+		'manage_categories' => false
+		));
+        update_option('course_roles_are_set',true); // add option to track if its been added already.
+    }
+
+}
+
+function getMemberLevel(){
+	$current_user = wp_get_current_user();
+	$member_level = '';
+	
+	if ( $current_user->exists() ) {
+		if ( in_array( 'coach', (array) $current_user->roles)) {
+		   $member_level = 'coach';
+		}else if (in_array( 'participant', (array) $current_user->roles)){
+			$member_level = 'participant';
+		}else if (in_array( 'tutor', (array) $current_user->roles)) {
+			$member_level = 'tutor';
+		}else if (in_array( 'admin', (array) $current_user->roles)){
+			$member_level = 'admin';
+		}
+		
+	}
+	return $member_level;
+}
+
+//Remove items from the dashboard menu for coach/participants
+add_filter('tutor_dashboard/nav_items', 'remove_some_links_dashboard');
+function remove_some_links_dashboard($links){
+	unset($links['reviews']);
+	unset($links['wishlist']);
+	unset($links['enrolled-courses']);
+	unset($links['question-answer']);
+	unset($links['my-quiz-attempts']);	
+	unset($links['purchase_history']);
+	return $links;
+}
+
+
+////Add new links for coach only
+add_filter('tutor_dashboard/nav_items', 'add_some_links_dashboard');
+function add_some_links_dashboard($links){
+
+	$current_user = wp_get_current_user();	
+	if ( $current_user->exists() ) {				
+		//print_r($current_user->roles);
+		if ( in_array( 'coach', (array) $current_user->roles) or in_array('administrator', (array)$current_user->roles) or in_array('tutor_instructor', (array)$current_user->roles)) {
+	    //The user has the "coach", or "tutor", or "admin" role
+			$links['document_submission'] = [
+				"title" =>	__('Document Submission', 'tutor'),
+				"url" => "/dashboard/document_submission",
+				"icon" => "tutor-icon-calender-line",
+			];	
+			$links['resources'] = [
+				"title" =>	__('Resources', 'tutor'),
+				"url" => "/dashboard/resources",
+				"icon" => "tutor-icon-calender-line",
+			];	
+					
+			
+		}
+	}	
+	return $links;
+}
+
+//$all_meta_for_user = get_user_meta($user_id);
+//$member_level = unserialize($all_meta_for_user['4JAEEZvu_capabilities'][0]);
+
+//When admin adds a new user, automatically set the membership user db table 
+//to the appropriate level (doing this in code because we do not have 
+//the paid version of the 'Paid Membership Pro' plugin.)
+//If we purchase Pro version, take out this code.
+add_action( 'user_register', function ( $user_id ) {
+	$user_meta = get_userdata($user_id); 
+	$user_roles= $user_meta->roles; 
+	if (in_array("coach", $user_roles)){
+		$m_id = 1;		
+	}else {
+		$m_id = 2;
+	}	
+	global $wpdb; 
+	$wpdb->insert('4JAEEZvu_pmpro_memberships_users', array('membership_id' => $m_id, 'user_id' => $user_id, 'status' => 'active', 'cycle_period'=> ''));
+	//echo print_r($wpdb);
+	    
+});
+
+function listEntries($form_id,$entry_id){
+	if (isset($form_id) && isset($entry_id)) {
+		//Don't show these fields to the user.
+		$field_skip = array('is_starred','is_read','ip','source_url','user_agent','date_updated','post_id','currency','payment_status','payment_date','payment_method','transaction_id','is_fulfilled','transaction_type','payment_amount',"id","form_id");
+		
+		$form    = GFAPI::get_form( $form_id );				
+		$entry = GFAPI::get_entry($entry_id);
+		//Why does this method NOT let me get the admin label! GRRRRRR
+		$li = '<div id="' . $entry_id . '" class="modal hide"><div class="modal-dialog"><a href="#" class="close-button"><i class="fa fa-close"></i></a><ul>';
+		foreach ( $entry as $key => $value ) {
+			//Wow why do we have to do this look-up here, they should create a method that auto does this. so silly.
+			$field = GFAPI::get_field( $form, $key );
+			$label = $field ? $field->get_field_label( false, '' ) : $key;	
+			
+			if (!in_array($label,$field_skip) && $entry["id"]===$entry_id && $value!=''){					
+				$content = maybe_unserialize($value);
+				if (is_array($content)){
+					foreach($content as $key => $val){
+						$content = '<div class="tabbed">' . $key+1 . " : " . $val . '</div>'; 
+					}
+				}
+				$li .= sprintf('<li>%1$s</li>', strtoupper(str_replace("_", " ",$label)) . ' : ' . $content);
+
+			}
+
+		}
+		$li .= '</ul></div></div>';
+		echo $li;
+	
+	}
+	
+}
+
+function getResources($category){
+	
+	if ($category !== ''){
+		$args = array(  
+			'post_type' => 'resources',
+			'post_status' => 'publish',
+			'posts_per_page' => -1, 
+			'orderby' => 'title', 
+			'order'  => 'ASC',
+			'tax_query' => array(
+				'taxonomy' => 'resource_category',
+				'field' => 'slug',
+				'terms' => $category,
+				)
+			);
+	}else{
+		$args = array(  
+			'post_type' => 'resources',
+			'post_status' => 'publish',
+			'posts_per_page' => -1, 
+			'orderby' => 'title', 
+			'order'  => 'ASC'
+		);
+	}
+    $loop = new WP_Query( $args );       
+	return $loop;
+   
+}
+
+function getCustomCats($category){
+	
+   $args = array(
+		'taxonomy' => $category,
+		'orderby' => 'name',
+		'order'   => 'ASC'
+           );
+
+   $cats = get_categories($args);
+	return $cats;
+   
+  
+}
+function getGravityFormEntriesById($id, $user){
+	$form_id = $id;
+	$entries = GFAPI::get_entries( $form_id );
+	//loop through entries for that form, and extract ones belonging to that person.
+	$search_criteria = array(
+    'status'        => 'active',
+    'field_filters' => array(
+        'mode' => 'any',
+        array(
+            'key'   => '1',
+            'value' => 'Second Choice'
+        ),
+        array(
+            'key'   => '5',
+            'value' => 'My text'
+        )
+    )
+);
+ 
+// Getting the entries
+$result = GFAPI::get_entries( $form_id, $search_criteria );
+// Getting just the IDs
+$result = GFAPI::get_entry_ids( $form_id, $search_criteria );
+
+}
+function generateSelectFromArray($array){
+	 foreach($array as $key => $value) {
+  		sprintf('<option value="%1$s">%2$s</option>',
+ 		$key,
+		$value);
+   }
+   
+}
+
+add_filter( 'gform_submit_button', 'add_onclick', 10, 2 );
+function add_onclick( $button, $form ) {
+    $dom = new DOMDocument();
+    $dom->loadHTML( '<?xml encoding="utf-8" ?>' . $button );
+    $input = $dom->getElementsByTagName( 'input' )->item(0);
+    $onclick = $input->getAttribute( 'onclick' );
+    $onclick .= " addAdditionalAction('submit_message');"; // Here's the JS function we're calling on click.
+    $input->setAttribute( 'onclick', $onclick );
+    return $dom->saveHtml( $input );
+}
+
+//returns a comma list of (or one) of member field.
+function getMemberField($user_id,$key){
+	$field = get_user_meta($user_id, $key, false);	
+	return urlencode($field[0]);
+}
+//add_filter( 'gform_field_value_educator_id', 'populate_post_educator_id' );
+//This function filters out any 'regular (gravity) forms'
+function getGravityFormsByCategory(){
+	
+	$forms = GFAPI::get_forms();	
+	$member_forms = array();	
+	$gforms_categories_terms = get_terms( array(
+		'taxonomy' => 'gforms_categories',
+		'hide_empty' => false,
+	));
+	
+	//key name = gravityforms-categories;
+	for ($i=0; $i<count($forms); $i++){		
+		$cats = $forms[$i]["gravityforms-categories"];	
+		for ($x=0; $x<count($cats); $x++){						
+			$g_cats = $cats["gforms_categories"];
+			$cat_key = array_search("1",$g_cats); // If value is 1, then it is the active category term id.
+			$slug_lookup = array_filter($gforms_categories_terms,function($item) use($cat_key){
+				return $item->term_id == $cat_key;
+			});				
+			$cat_slug = isset($slug_lookup[0]->slug) ? $slug_lookup[0]->slug : '';
+			if ($cat_slug == "member-forms"){
+				array_push($member_forms,$forms[$i]);
+			}
+		}
+	}
+	
+	return $member_forms;
+	
+}
+
+function getCurrentUserSubmissions($userid){
+	
+//wp_gf_entry table.
+//date_created, created_by (userid), id, form_id
+
+	if ($userid === ''){
+		return;
+	}
+	if ($userid !== ''){
+		$search_criteria               = array();
+		$search_criteria['created_by'] = $userid;  
+		$results = GFAPI::get_entries(0, $search_criteria );
+		return $results;
+	}
+	
+}
+
+// Enqueue frontend assets
+function frontend_enqueue_assets() { 
+    wp_enqueue_style( 'parent-style', get_template_directory_uri().'/style.css' ); 
+    wp_enqueue_style( 'general', get_stylesheet_directory_uri().'/assets/css/general.css' ); 
+    wp_enqueue_style( 'header', get_stylesheet_directory_uri().'/assets/css/header.css' ); 
+    wp_enqueue_style( 'footer', get_stylesheet_directory_uri().'/assets/css/footer.css' ); 
+    wp_enqueue_style( 'mobile', get_stylesheet_directory_uri().'/assets/css/mobile.css' ); 
+    wp_enqueue_script( 'main-script', get_stylesheet_directory_uri().'/assets/js/main.js' ); // this needs to be defer and jquery dependant
+    wp_enqueue_script( 'fontawesome', 'https://kit.fontawesome.com/cdeed9ed69.js' ); 
+} 
+add_action( 'wp_enqueue_scripts', 'frontend_enqueue_assets' ); 
+
+// Enqueue backend assets
+function admin_enqueue_assets() {
+    wp_enqueue_style('admin-style', get_stylesheet_directory_uri() .'/admin/assets/css/admin.css');
+    wp_enqueue_script('admin-script', get_stylesheet_directory_uri() .'/admin/assets/js/admin.js');
+}
+add_action('admin_enqueue_scripts', 'admin_enqueue_assets');
+
+// Call theme initializer
+include( get_stylesheet_directory() . '/theme.php' );
+
+// Remove compression notice
+remove_action( 'shutdown', 'wp_ob_end_flush_all', 1 );
+
+// Directory Carousel Shortcode
+function directory_carousel_shortcode( $atts ) {
+  ob_start();
+  require_once('advanced/shortcodes/directory-carousel.php');
+  return ob_get_clean();
+}
+add_shortcode('directory-carousel', 'directory_carousel_shortcode');
+
+// Event Carousel Shortcode
+function events_carousel_shortcode( $atts ) {
+  ob_start();
+  require_once('advanced/shortcodes/events-carousel.php');
+  return ob_get_clean();
+}
+add_shortcode('events-carousel', 'events_carousel_shortcode');
+
+// Featured Directory Shortcode
+function featured_directory_shortcode( $atts ) {
+  ob_start();
+  require_once('advanced/shortcodes/featured-directory.php');
+  return ob_get_clean();
+}
+add_shortcode('featured-directory', 'featured_directory_shortcode');
+
+/*
+// Mega Menu Header
+add_action('get_header', 'mega_menu_header');
+function mega_menu_header(){
+    require('overrides/header-mega.php');
+    $templates   = [];
+    $templates[] = 'header.php';
+    remove_all_actions( 'wp_head' );
+    ob_start();
+    locate_template( $templates, true );
+    ob_get_clean();
+}
+*/
+
+// Add desc to menu (for mega menu image backgrounds)
+function add_description_to_menu($item_output, $item, $depth, $args) {
+  if (strlen($item->description) > 0 ) {
+    $item_output = '<a href="'.$item->url.'" style="background-image:url('.$item->description.')"><span>'.$item->title.'</span></a>';
+  }   
+  return $item_output;
+}
+add_filter('walker_nav_menu_start_el', 'add_description_to_menu', 10, 4);
+
+// Add search icon to main menu
+function add_search_icon($items, $args) {
+  if ( $args->theme_location == 'primary-menu' ){
+    $items .= '<li id="menu-item-91" class="nav_button menu-item menu-item-type-post_type menu-item-object-page menu-item-91"><div id="et_top_search"><a href="#"><i class="fas fa-search" aria-hidden="true"></i></a></div></li>';
+  }
+return $items;
+}
+//add_filter('wp_nav_menu_items', 'add_search_icon', 10, 2);
+
+// // Add gtranslate to main menu
+// function add_gtranslate($items, $args) {
+//   if ( $args->theme_location == 'primary-menu' ){
+//     $items .= do_shortcode('[gtranslate]');
+//   }
+// return $items;
+// }
+// add_filter('wp_nav_menu_items', 'add_gtranslate', 10, 2);
