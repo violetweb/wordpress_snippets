@@ -1,0 +1,90 @@
+<?php
+/**
+ * Question Answer
+ *
+ * @package Tutor\Templates
+ * @subpackage Dashboard\Document_Submission
+ * @author Themeum <support@themeum.com>
+ * @link https://themeum.com
+ * @since 1.0.0
+ */
+$current_user = wp_get_current_user();
+$member_level = getMemberLevel();
+$userid = $current_user->ID;
+
+?>
+<h2>
+	Documents
+</h2>
+<div class="tutor-dashboard-content-inner document-submission">
+	<div class="tutor-mb-32">
+		<ul class="tutor-nav" tutor-priority-nav="">
+							<li class="tutor-nav-item">
+					<a class="tutor-nav-link" href="/dashboard/document_submission">
+						Forms				</a>
+				</li>							
+					<li class="tutor-nav-item">
+					<a class="tutor-nav-link is-active" href="/dashboard/document_submission/submissions">
+						Submissions	</a>
+				</li>
+		
+		</ul>
+	</div>
+</div>
+<div id="submissions">
+	
+	<table>
+		<thead>
+			<th>Created Date</th>
+			<th>Educator ID</th>
+			<th>Educator</th>
+			<th>Program Name</th>
+			<th>Status</th>
+			<th>Type</th>
+		</thead>
+		<tbody>
+<?php
+	
+	$submissions = getCurrentUserSubmissions($userid);
+	$append_result = array();
+	
+	for ($i=0; $i<count($submissions); $i++){
+		$id = $submissions[$i]["id"];		
+		$created_date = $submissions[$i]["date_created"];				
+		$status = $submissions[$i]["status"];
+		$field_educatorid = rgar($submissions[$i], 3);
+		$field_educator = rgar($submissions[$i],4);
+		$field_program = rgar($submissions[$i], 12);
+		$form_type = rgar($submissions[$i], 16);		
+		$pdf = rgar($submissions[$i], 15);		
+		//$entry = GFAPI::get_entry( $id ); // all the data in array
+		//$keys = array_keys($entry);
+		printf('<tr><td>%1$s</td><td>%2$s</td><td>%3$s</td><td>%4$s</td><td>%5$s</td><td>%6$s</td><td>%7$s</td></tr>',		
+		$created_date,		
+		$field_educatorid,
+			  $field_educator,
+			  $field_program,
+			  $status,
+			  $form_type,
+			  ($form_type === "Online Form") ? '<a href="/" class="view-entry" data-formid="' . $id . '">View Details</a>' . listEntries($id) : '<a href="' . $pdf . '">Download PDF</a>');
+		
+	}
+	?>
+		</tbody>
+	</table>
+
+	<?php
+	
+?>
+<script>
+jQuery(document).ready(function($){
+	$("body").on("click",".view-entry", function(e){		
+		e.preventDefault();
+		$activate_id = $(this).attr("data-formid");
+		$text = $(this).text();
+		($text === "Hide Details") ? $(this).text("View Details") : $(this).text("Hide Details");
+		$("div#"+$activate_id).toggleClass("hide");
+	});
+});
+
+</script>
