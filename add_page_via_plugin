@@ -1,0 +1,28 @@
+public function create_pricing_page(){
+
+		$page = ucwords($_POST["page"]);
+		$content = "<div class='row align-items-center'>" . stripslashes(get_option("stripe_plan_html")) . "</div>";
+		$page_id = '';
+		if (get_page_by_title($page) === null){			
+			$page_id = wp_insert_post(
+				array(
+				'comment_status' => 'close',
+				'ping_status'    => 'close',
+				'post_author'    => 1,
+				'post_title'     => wp_strip_all_tags(ucwords($page)),
+				'post_name'      => strtolower(str_replace(' ', '-', trim($page))),
+				'post_status'    => 'publish',
+				'post_content'   => $content,
+				'post_type'      => 'page'           
+				)
+			);
+			if(!is_wp_error($post_id)){
+				echo json_encode($post_id);
+			  }else{
+				echo json_encode($post_id->get_error_message());
+			}
+		}else{
+			echo json_encode("Page already exists.");
+		}
+		wp_die();
+	}
