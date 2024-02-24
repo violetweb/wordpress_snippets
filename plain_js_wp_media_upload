@@ -1,0 +1,33 @@
+
+/*** PLAIN JAVASCRIPT */
+var customUploaderB;
+var default_icon_button = document.getElementById('set-default-icon');
+
+default_icon_button.addEventListener("click",function(e){
+
+    e.preventDefault();
+
+    if (customUploaderB) {
+      customUploaderB.open();
+      return;
+    }
+
+    customUploaderB = wp.media({
+         title: 'Default Map Icon', // modal window title
+         button: {
+           text: 'Choose Icon' // button label text
+         },
+         multiple: false
+    });
+
+    customUploaderB.on( 'select', function() { // it also has "open" and "close" events        
+         const attachment = customUploaderB.state().get( 'selection' ).first().toJSON();    
+         if (attachment.url){          
+           jQuery("#moo_mapbox_default_icon").val(attachment.url);                 
+           jQuery("#mapbox_default_coords_icon").attr('src',attachment.url);              
+         }
+    });
+
+    customUploaderB.open();
+
+});
